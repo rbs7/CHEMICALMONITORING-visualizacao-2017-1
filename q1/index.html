@@ -53,6 +53,14 @@
         <option value=8>8</option> 
         <option value=9>9</option>   
     </select>
+    
+    <select id = "Chemical">
+        <option value=0>All Chemicals</option>
+        <option value=1>Appluimonia</option> 
+        <option value=2>AGOC-3A</option>   
+        <option value=3>Chlorodinine</option> 
+        <option value=4>Methylosmolene</option>
+    </select>
 
     <button id="generate_data" onclick="updateSvg()">Generate Data</button>
 
@@ -68,7 +76,8 @@
         month = 3, 
         hour = 0,
         i = 0, 
-        sensor = 1;
+        sensor = 1,
+        chemical = 0;
 
     var parseTime = d3.timeParse("%m/%d/%Y"),
         parseHour = d3.timeParse("%H:%M");
@@ -161,6 +170,11 @@
         .on('change', function() {
         sensor = eval(d3.select(this).property("value"));
     });
+    
+    d3.select('#Chemical')
+        .on('change', function() {
+        chemical = eval(d3.select(this).property("value"));
+    });
 
     function brushended() {
         var s = d3.event.selection;
@@ -213,14 +227,21 @@
             if ((new Date(parseTime(data[i][2]))).getMonth() == month) {
                 if (new Date(parseHour(data[i][3])).getHours() == hour) {
                     if (Number(data[i][1] == sensor)) {
-                        num = Number(data[i][4]);
-                        if (num > max) {
-                            max = num;
-                        }
-                        else if (num < min) {
-                            min = num;
-                        }
-                        to_plot.push(data[i]);
+
+                    	if (chemical == 0 ||
+                    	data[i][0] == "Appluimonia" && chemical == 1 ||
+                    	data[i][0] == "AGOC-3A" && chemical == 2 ||
+                    	data[i][0] == "Chlorodinine" && chemical == 3 ||
+                    	data[i][0] == "Methylosmolene" && chemical == 4) {
+		                    num = Number(data[i][4]);
+		                    if (num > max) {
+		                        max = num;
+		                    }
+		                    else if (num < min) {
+		                        min = num;
+		                    }
+		                    to_plot.push(data[i]);
+	                	}
                     }
                 }
             }
@@ -233,8 +254,13 @@
         yScale.domain(y0);
         xAxisGroup.transition(t).call(xAxis);
         yAxisGroup.transition(t).call(yAxis);
+        
+		var circles =  svg.selectAll("circle").data(new Array());
+		circles
+            .exit()
+            .remove();
 
-        var circles =  svg.selectAll("circle").data(to_plot);
+        circles =  svg.selectAll("circle").data(to_plot);
 
         circles
             .enter()
