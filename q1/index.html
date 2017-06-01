@@ -1,17 +1,264 @@
 <!DOCTYPE html>
-<html lang="en-US">
-	<head>
-		<meta charset="utf-8">
-		<title>Chemical Monitoring - Q1</title>
-		<link rel="stylesheet" href="../assets/css/styles.css">
-		<meta name="viewport" content="width=device-width">
-		<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-		<script src="jquery-csv.min.js"></script>
-	</head>
-	<body>
-		<script type="text/javascript" src="q1.js"></script>
-		<h1>Q1</h1>
-		
-	</body>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Q1</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="jquery-csv.min.js"></script>
+</head>
+<body>
+
+    <select id = "Month">
+        <option value=3>April</option>
+        <option value=7>August</option> 
+        <option value=11>December</option>   
+    </select>
+
+    <select id = "Hour">
+        <option value=0>0</option>
+        <option value=1>1</option>
+        <option value=2>2</option> 
+        <option value=3>3</option>
+        <option value=4>4</option>
+        <option value=5>5</option> 
+        <option value=6>6</option>
+        <option value=7>7</option>
+        <option value=8>8</option> 
+        <option value=9>9</option>
+        <option value=10>10</option>
+        <option value=11>11</option> 
+        <option value=12>12</option>
+        <option value=13>13</option>
+        <option value=14>14</option> 
+        <option value=15>15</option>
+        <option value=16>16</option>
+        <option value=17>17</option> 
+        <option value=18>18</option>
+        <option value=19>19</option>
+        <option value=20>20</option> 
+        <option value=21>21</option>
+        <option value=22>22</option>
+        <option value=23>23</option>    
+    </select>
+
+    <select id = "Sensor">
+        <option value=1>1</option>
+        <option value=2>2</option> 
+        <option value=3>3</option>
+        <option value=4>4</option>
+        <option value=5>5</option> 
+        <option value=6>6</option>
+        <option value=7>7</option>
+        <option value=8>8</option> 
+        <option value=9>9</option>   
+    </select>
+
+    <button id="generate_data" onclick="updateSvg()">Generate Data</button>
+
+    <script>
+    const margin = {top: 50, right: 50, bottom: 50, left: 50},
+        width = 800 - margin.left - margin.right,
+        height = 600 - margin.top - margin.bottom;
+        r = height/100;
+
+    var to_plot = [];
+    
+    var num = 0, 
+        month = 3, 
+        hour = 0,
+        i = 0, 
+        sensor = 1;
+
+    var parseTime = d3.timeParse("%m/%d/%Y"),
+        parseHour = d3.timeParse("%H:%M");
+
+    $.ajax({
+        url: "sensor_data.csv",
+        async: false,
+        success: function (csv) {
+            data = $.csv.toArrays(csv);
+        },
+        dataType: "text",
+        complete: function () {
+            // call a function on complete
+        }
+    });
+
+    var min = Infinity; 
+    var max = -Infinity;
+
+    for (; i < data.length; i++) {
+        if ((new Date(parseTime(data[i][2]))).getMonth() == month) {
+            if (new Date(parseHour(data[i][3])).getHours() == hour) {
+                if (Number(data[i][1] == sensor)) {
+                    num = Number(data[i][4]);
+                    if (num > max) {
+                        max = num;
+                    }
+                    else if (num < min) {
+                        min = num;
+                    }
+                    to_plot.push(data[i]);
+                }
+            }
+        }
+    }
+
+    var x0 = [new Date(parseTime((month+1)+"/01/2016")), new Date(parseTime((month+1)+"/31/2016"))];
+    var y0 = [min,max];
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+    var xScale = d3.scaleTime().domain(x0).range([0, width]),
+        yScale = d3.scaleLog().domain(y0).range([height, 0]);
+
+    var xAxis = d3.axisBottom(xScale),
+        yAxis = d3.axisLeft(yScale);
+
+    var xAxisGroup = svg
+        .append("g")
+        .attr("class", "xAxis")
+        .attr("transform", "translate(0, " + height + ")");
+
+    var yAxisGroup = svg
+        .append("g")
+        .attr("class", "yAxis");
+
+    xAxisGroup.call(xAxis);
+    yAxisGroup.call(yAxis);
+
+    var t = svg.transition().duration(750);
+
+    var brush = 
+        d3.brush()
+        .on("end", brushended),
+        idleTimeout,
+        idleDelay = 350;
+
+    svg.selectAll(".domain")
+        .style("display", "none");
+
+    svg.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    d3.select('#Month')
+        .on('change', function() {
+        month = eval(d3.select(this).property("value"));
+    });
+
+    d3.select('#Hour')
+        .on('change', function() {
+        hour = eval(d3.select(this).property("value"));
+    });
+
+    d3.select('#Sensor')
+        .on('change', function() {
+        sensor = eval(d3.select(this).property("value"));
+    });
+
+    function brushended() {
+        var s = d3.event.selection;
+        if (!s) {
+            if (!idleTimeout) return idleTimeout = setTimeout(idled, idleDelay);
+            xScale.domain(x0);
+            yScale.domain(y0);
+        } else {
+            xScale.domain([s[0][0], s[1][0]].map(xScale.invert, xScale));
+            yScale.domain([s[1][1], s[0][1]].map(yScale.invert, yScale));
+            svg.select(".brush").call(brush.move, null);
+        }
+        zoom();
+    }
+
+    function idled() {
+        idleTimeout = null;
+    }
+
+    function zoom() {
+        xAxisGroup.transition(t).call(xAxis);
+        yAxisGroup.transition(t).call(yAxis);
+        svg
+            .selectAll("circle")
+            .transition(t)
+            .attr("cx", function(d) { return xScale(new Date(parseTime(d[2])))})
+            .attr("cy", function(d) { return yScale(Number(d[4]))});
+    }
+
+    function map_color(chemical) {
+        if (chemical.localeCompare("Appluimonia") == 0) {
+            return "blue";
+        }
+        else if (chemical.localeCompare("AGOC-3A") == 0) {
+            return "green";
+        }
+        else if (chemical.localeCompare("Chlorodinine") == 0) {
+            return "red";
+        }
+        else return "purple";
+    }
+
+    function updateSvg () {
+        min = Infinity; 
+        max = -Infinity;
+
+        to_plot = [];
+        
+        for (i = 0; i < data.length; i++) {
+            if ((new Date(parseTime(data[i][2]))).getMonth() == month) {
+                if (new Date(parseHour(data[i][3])).getHours() == hour) {
+                    if (Number(data[i][1] == sensor)) {
+                        num = Number(data[i][4]);
+                        if (num > max) {
+                            max = num;
+                        }
+                        else if (num < min) {
+                            min = num;
+                        }
+                        to_plot.push(data[i]);
+                    }
+                }
+            }
+        }
+
+        x0 = [new Date(parseTime((month+1)+"/01/2016")), new Date(parseTime((month+1)+"/31/2016"))];
+        y0 = [min,max];
+
+        xScale.domain(x0);
+        yScale.domain(y0);
+        xAxisGroup.transition(t).call(xAxis);
+        yAxisGroup.transition(t).call(yAxis);
+
+        var circles =  svg.selectAll("circle").data(to_plot);
+
+        circles
+            .enter()
+            .append("circle")
+            .attr("r", r)
+            .attr("cx", function(d){return xScale(new Date(parseTime(d[2])))})
+            .attr("cy", function(d){return yScale(Number(d[4]))})
+            //.attr("fill", function(d){return cScale(d[0])})
+            .attr("fill", function(d){return map_color(d[0])})
+            .style("opacity", 0.5);
+
+        circles
+            .transition()
+            .attr("cx", function(d) { return xScale(new Date(parseTime(d[2])))})
+            .attr("cy", function(d) { return yScale(Number(d[4]))});
+
+        circles
+            .exit()
+            .remove();
+
+        return;
+    }
+
+    </script>
+
+</body>
 </html>
