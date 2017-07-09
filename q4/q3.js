@@ -100,7 +100,7 @@ d3.csv("sensor_data.csv", type, function(error, data) {
   focus.append("g")
       .attr("class", "axis axis--y")
       .call(yAxis);*/
-
+debugger;
   context.append("path")
       .datum(data)
       .attr("class", "area")

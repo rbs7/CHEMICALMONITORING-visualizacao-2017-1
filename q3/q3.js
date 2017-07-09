@@ -6,7 +6,7 @@ var svg = d3.select("svg"),
     height = +svg.attr("height") - margin.top - margin.bottom,
     height2 = +svg.attr("height") - margin2.top - margin2.bottom;
 
-var parseDate = d3.timeParse("%b %Y");
+var parseDate = d3.timeParse("%m/%d/%y %H:%M");
 
 var x = d3.scaleTime().range([0, width]),
     x2 = d3.scaleTime().range([0, width]),
@@ -29,15 +29,15 @@ var zoom = d3.zoom()
 
 var area = d3.area()
     .curve(d3.curveMonotoneX)
-    .x(function(d) { return x(d.date); })
+    .x(function(d) { return x(d.DateTime); })
     .y0(height)
-    .y1(function(d) { return y(d.price); });
+    .y1(function(d) { return y(d.Reading); });
 
 var area2 = d3.area()
     .curve(d3.curveMonotoneX)
-    .x(function(d) { return x2(d.date); })
+    .x(function(d) { return x2(d.DateTime); })
     .y0(height2)
-    .y1(function(d) { return y2(d.price); });
+    .y1(function(d) { return y2(d.Reading); });
 
 svg.append("defs").append("clipPath")
     .attr("id", "clip")
@@ -53,11 +53,11 @@ var context = svg.append("g")
     .attr("class", "context")
     .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
-d3.csv("sp500.csv", type, function(error, data) {
+d3.csv("sensor_data.csv", type, function(error, data) {
   if (error) throw error;
 
-  x.domain(d3.extent(data, function(d) { return d.date; }));
-  y.domain([0, d3.max(data, function(d) { return d.price; })]);
+  x.domain(d3.extent(data, function(d) { return d.DateTime; }));
+  y.domain([0, d3.max(data, function(d) { return d.Reading; })]);
   x2.domain(x.domain());
   y2.domain(y.domain());
 
@@ -119,7 +119,7 @@ function zoomed() {
 }
 
 function type(d) {
-  d.date = parseDate(d.date);
-  d.price = +d.price;
+  d.DateTime = parseDate(d.DateTime);
+  d.Reading = +d.Reading;
   return d;
 }
