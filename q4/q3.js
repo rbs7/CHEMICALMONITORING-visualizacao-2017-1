@@ -1,7 +1,7 @@
 
 var svg = d3.select("svg"),
-    margin = {top: 20, right: 20, bottom: 110, left: 40},
-    margin2 = {top: 430, right: 20, bottom: 30, left: 40},
+    margin = {top: 0, right: 0, bottom: 180, left: 0},
+    margin2 = {top: 740, right: 20, bottom: 30, left: 15},
     width = +svg.attr("width") - margin.left - margin.right,
     height = +svg.attr("height") - margin.top - margin.bottom,
     height2 = +svg.attr("height") - margin2.top - margin2.bottom;
@@ -46,12 +46,25 @@ svg.append("defs").append("clipPath")
     .attr("height", height);
 
 var focus = svg.append("g")
-    .attr("class", "focus")
+    //.attr("class", "focus")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var context = svg.append("g")
     .attr("class", "context")
     .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+var sensores = [
+    {x:62, y:21, r:3},
+    {x:66, y:35, r:3},
+    {x:76, y:41, r:3},
+    {x:88, y:45, r:3},
+    {x:103, y:43, r:3},
+    {x:102, y:22, r:3},
+    {x:89, y:3, r:3},
+    {x:74, y:7, r:3},
+    {x:119, y:42, r:3}
+];
+
 
 d3.csv("sp500.csv", type, function(error, data) {
   if (error) throw error;
@@ -61,19 +74,30 @@ d3.csv("sp500.csv", type, function(error, data) {
   x2.domain(x.domain());
   y2.domain(y.domain());
 
-  focus.append("path")
+
+  focus.selectAll("circle").data(sensores)
+    .enter()
+  .append("circle")
+      //.attr("class", "area")
+      .attr("d", area)
+      .attr("cy", function(d) { return 710-d.y*720/200;})
+      .attr("cx", function(d) { return d.x*720/200;})
+      .attr("r",  function(d) { return d.r;})
+      .attr("fill", "red");
+
+  /*focus.append("path")
       .datum(data)
       .attr("class", "area")
-      .attr("d", area);
+      .attr("d", area);*/
 
-  focus.append("g")
+  /*focus.append("g")
       .attr("class", "axis axis--x")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
 
   focus.append("g")
       .attr("class", "axis axis--y")
-      .call(yAxis);
+      .call(yAxis);*/
 
   context.append("path")
       .datum(data)
