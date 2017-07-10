@@ -1,4 +1,3 @@
-
 var svg = d3.select("svg"),
     margin = {top: 11, right: 10, bottom: 180+13, left: 13},
     margin2 = {top: 740, right: 30, bottom: 30, left: 20},
@@ -48,7 +47,7 @@ svg.append("defs").append("clipPath")
     .attr("height", height);
 
 var focus = svg.append("g")
-    //.attr("class", "focus")
+    .attr("class", "focus")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var context = svg.append("g")
@@ -67,6 +66,16 @@ var sensores = [
     {x:119, y:42, r:3}
 ];
 
+var globaldata;
+function makeglobaldata(data) {
+    globaldata = data;
+}
+
+function contsensor(data, interval) {
+  var dataaux = data.filter(function(d) { return d.DateTime.getTime() >= interval[0].getTime() && d.DateTime.getTime() <= interval[1].getTime() });
+  var sensorSum = dataaux.reduce(function (previous,d) { previous[d.Monitor-1]+=d.Reading; return previous; }, [0,0,0,0,0,0,0,0,0]);
+  return sensorSum;
+}
 
 d3.csv("sensor_data.csv", type, function(error, data) {
   if (error) throw error;
@@ -78,17 +87,19 @@ d3.csv("sensor_data.csv", type, function(error, data) {
   x2.domain(x.domain());
   y2.domain(y.domain());
 
+  makeglobaldata(data);
+
+  var sensorSum = contsensor(data, x.domain());
 
   focus.selectAll("circle")
       .data(sensores)
       .enter()
       .append("circle")
-      //.attr("class", "area")
-      .attr("d", area)
+      .attr("class", "area")
       .attr("cy", function(d) { return height-d.y*height/200;})
       .attr("cx", function(d) { return d.x*width/200;})
-      .attr("r",  function(d) { return d.r;})
-      .attr("fill", "red");
+      .attr("r",  function(d,i) { return 3*Math.sqrt(sensorSum[i]);})
+      ;
 
   /*focus.append("path")
       .datum(data)
@@ -117,7 +128,7 @@ d3.csv("sensor_data.csv", type, function(error, data) {
   context.append("g")
       .attr("class", "brush")
       .call(brush)
-      .call(brush.move, x2.range());
+      .call(brush.move, x2.range().map(function(d) {return d/50;}));
 
   svg.append("rect")
       .attr("class", "zoom")
@@ -131,7 +142,10 @@ function brushed() {
   if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
   var s = d3.event.selection || x2.range();
   x.domain(s.map(x2.invert, x2));
-  focus.select(".area").attr("d", area);
+  //focus.selectAll(".area").attr("d", area);
+  context.select(".area").attr("d", area2);
+  var sensorSum = contsensor(globaldata, x.domain());
+  focus.selectAll("circle").attr("r", function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
   focus.select(".axis--x").call(xAxis);
   svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
       .scale(width / (s[1] - s[0]))
@@ -142,7 +156,8 @@ function zoomed() {
   if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
   var t = d3.event.transform;
   x.domain(t.rescaleX(x2).domain());
-  focus.select(".area").attr("d", area);
+  var sensorSum = contsensor(globaldata, x.domain());
+  focus.selectAll("circle").attr("r", function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
   focus.select(".axis--x").call(xAxis);
   context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 }
