@@ -90,9 +90,9 @@ d3.csv("sensor_data.csv", type, function(error, data) {
   /*focus.append("path")
       .datum(data)
       .attr("class", "area")
-      .attr("d", area);*/
+      .attr("d", area);
 
-  /*focus.append("g")
+  focus.append("g")
       .attr("class", "axis axis--x")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
@@ -100,7 +100,7 @@ d3.csv("sensor_data.csv", type, function(error, data) {
   focus.append("g")
       .attr("class", "axis axis--y")
       .call(yAxis);*/
-debugger;
+
   context.append("path")
       .datum(data)
       .attr("class", "area")
@@ -114,7 +114,7 @@ debugger;
   context.append("g")
       .attr("class", "brush")
       .call(brush)
-      .call(brush.move, x.range());
+      .call(brush.move, x2.range());
 
   svg.append("rect")
       .attr("class", "zoom")

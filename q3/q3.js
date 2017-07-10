@@ -55,6 +55,8 @@ var context = svg.append("g")
 
 d3.csv("sensor_data.csv", type, function(error, data) {
   if (error) throw error;
+  
+  data = data.filter(function(d) { return d.Chemical == "Methylosmolene" && d.Monitor == 3 && d.DateTime.getMonth() == 3})
 
   x.domain(d3.extent(data, function(d) { return d.DateTime; }));
   y.domain([0, d3.max(data, function(d) { return d.Reading; })]);
