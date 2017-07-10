@@ -56,7 +56,22 @@ var context = svg.append("g")
 d3.csv("sensor_data.csv", type, function(error, data) {
   if (error) throw error;
   
-  data = data.filter(function(d) { return d.Chemical == "Methylosmolene" && d.Monitor == 3 && d.DateTime.getMonth() == 3})
+  data = data.filter(function(d) { return d.Chemical == "Methylosmolene" /*&& d.Monitor == 3*/ && d.DateTime.getMonth() == 3})
+
+  var dataaux = [];
+  dataaux[0] = data[0];
+  for (var i = 1, j = 0; i < data.length; i++) {
+      //debugger;
+    if (data[i].DateTime.toString() === data[i-1].DateTime.toString()) {
+        dataaux[j].Reading += data[i].Reading;
+    } else {
+        j++;
+        dataaux[j] = data[i];
+    }
+  }
+  data = dataaux;
+
+  //debugger;
 
   x.domain(d3.extent(data, function(d) { return d.DateTime; }));
   y.domain([0, d3.max(data, function(d) { return d.Reading; })]);
