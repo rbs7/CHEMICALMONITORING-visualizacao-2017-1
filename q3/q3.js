@@ -127,7 +127,9 @@ d3.csv("sensor_data.csv", type, function(error,data) {
     context.append("g")
         .attr("class", "brush")
         .call(brush)
-        .call(brush.move, x2.range().map(function(d) {return d/50;}));
+        .call(brush.move, x2.range().map(function(d) {return d/50;}))
+        ;
+    //d3.selectAll('.brush>.handle').remove();
 
     svg.append("rect")
         .attr("class", "zoom")
@@ -143,11 +145,16 @@ d3.csv("sensor_data.csv", type, function(error,data) {
         makeglobalwinddata(data);
 
         var windAverageDirection = contwind(data, x.domain());
-        focus.append("text")
+        /*focus.append("text")
             .attr("x", 30)
             .attr("y", 30)
             .text(windAverageDirection)
-            .attr("fill", "white");
+            .attr("fill", "white");*/
+        //attr("d", "M 0 0 36 18 0 36 9 18")
+        var perna = 30;
+        focus.append("path").attr("id","arrow").attr("d", "M 0 0 10 0 10 -" + perna + " 20 -" + perna + " 20 0 30 0 15 20")
+            .attr("transform", "translate(" + 50 + "," + 600 + ")rotate(" + 180 + " 15" + " 0" +")")
+            .style("fill", "steelblue");
 
         //debugger;
         /*focus.selectAll("rect")
@@ -204,6 +211,7 @@ function update() {
 
 function brushed() {
   if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
+  if (!d3.event.selection) return;
   var s = d3.event.selection || x2.range();
   x.domain(s.map(x2.invert, x2));
   //focus.selectAll(".area").attr("d", area);
@@ -214,6 +222,11 @@ function brushed() {
   if (globalwinddata) {
     var windAverageDirection = contwind(globalwinddata, x.domain());
     focus.select("text").text(windAverageDirection);
+    var perna = 30;
+    focus.select("#arrow")
+        .attr("d", "M 0 0 10 0 10 -" + perna + " 20 -" + perna + " 20 0 30 0 15 20")
+        .attr("transform", "translate(" + 50 + "," + 600 + ")rotate(" + (0+windAverageDirection) + " 15" + " 0" +")")
+        ;
   }
   svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
       .scale(width / (s[1] - s[0]))
@@ -230,6 +243,11 @@ function zoomed() {
   if (globalwinddata) {
     var windAverageDirection = contwind(globalwinddata, x.domain());
     focus.select("text").text(windAverageDirection);
+    var perna = 30;
+    focus.select("#arrow")
+        .attr("d", "M 0 0 10 0 10 -" + perna + " 20 -" + perna + " 20 0 30 0 15 20")
+        .attr("transform", "translate(" + 50 + "," + 600 + ")rotate(" + (0+windAverageDirection) + " 15" + " 0" +")")
+        ;
   }
   context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 }
