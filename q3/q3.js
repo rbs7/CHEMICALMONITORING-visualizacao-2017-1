@@ -8,7 +8,6 @@ var svg = d3.select("svg"),
 
 var parseDate = d3.timeParse("%m/%d/%y %H:%M");
 
-
 var x = d3.scaleTime().range([0, width]),
     x2 = d3.scaleTime().range([0, width2]),
     y = d3.scaleLinear().range([height, 0]),
@@ -42,7 +41,7 @@ var area2 = d3.area()
 
 svg.append("defs").append("clipPath")
     .attr("id", "clip")
-  .append("rect")
+    .append("rect")
     .attr("width", width)
     .attr("height", height);
 
@@ -71,72 +70,100 @@ function makeglobaldata(data) {
     globaldata = data;
 }
 
+var to_draw, sensorSum;
+var month = 3, chemical = "Appluimonia";
+
 function contsensor(data, interval) {
   var dataaux = data.filter(function(d) { return d.DateTime.getTime() >= interval[0].getTime() && d.DateTime.getTime() <= interval[1].getTime() });
   var sensorSum = dataaux.reduce(function (previous,d) { previous[d.Monitor-1]+=d.Reading; return previous; }, [0,0,0,0,0,0,0,0,0]);
   return sensorSum;
 }
 
-d3.csv("sensor_data.csv", type, function(error, data) {
-  if (error) throw error;
+d3.csv("sensor_data.csv", type, function(error,data) {
+    if (error) throw error;
+    makeglobaldata(data);
 
-  data = data.filter(function(d) { return d.Chemical == "Methylosmolene" && d.DateTime.getMonth() == 3})
+    to_draw = globaldata.filter(function(d) { return d.Chemical == chemical && d.DateTime.getMonth() == month})
 
-  x.domain(d3.extent(data, function(d) { return d.DateTime; }));
-  y.domain([0, d3.max(data, function(d) { return d.Reading; })]);
-  x2.domain(x.domain());
-  y2.domain(y.domain());
+    x.domain(d3.extent(to_draw, function(d) { return d.DateTime; }));
+    y.domain([0, d3.max(to_draw, function(d) { return d.Reading; })]);
+    x2.domain(x.domain());
+    y2.domain(y.domain());
 
-  makeglobaldata(data);
+    sensorSum = contsensor(to_draw, x.domain());
 
-  var sensorSum = contsensor(data, x.domain());
+    focus.selectAll("circle")
+        .data(sensores)
+        .enter()
+        .append("circle")
+        .attr("class", "area")
+        .attr("cy", function(d) { return height-d.y*height/200;})
+        .attr("cx", function(d) { return d.x*width/200;})
+        .attr("r",  function(d,i) { return 3*Math.sqrt(sensorSum[i]);})
+        ;
 
-  focus.selectAll("circle")
-      .data(sensores)
-      .enter()
-      .append("circle")
-      .attr("class", "area")
-      .attr("cy", function(d) { return height-d.y*height/200;})
-      .attr("cx", function(d) { return d.x*width/200;})
-      .attr("r",  function(d,i) { return 3*Math.sqrt(sensorSum[i]);})
-      ;
+    context.append("path")
+        .datum(to_draw)
+        .attr("id", "contexto")
+        .attr("class", "area")
+        .attr("d", area2);
 
-  /*focus.append("path")
-      .datum(data)
-      .attr("class", "area")
-      .attr("d", area);
+    context.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height2 + ")")
+        .call(xAxis2);
 
-  focus.append("g")
-      .attr("class", "axis axis--x")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
+    context.append("g")
+        .attr("class", "brush")
+        .call(brush)
+        .call(brush.move, x2.range().map(function(d) {return d/50;}));
 
-  focus.append("g")
-      .attr("class", "axis axis--y")
-      .call(yAxis);*/
-
-  context.append("path")
-      .datum(data)
-      .attr("class", "area")
-      .attr("d", area2);
-
-  context.append("g")
-      .attr("class", "axis axis--x")
-      .attr("transform", "translate(0," + height2 + ")")
-      .call(xAxis2);
-
-  context.append("g")
-      .attr("class", "brush")
-      .call(brush)
-      .call(brush.move, x2.range().map(function(d) {return d/50;}));
-
-  svg.append("rect")
-      .attr("class", "zoom")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-      .call(zoom);
+    svg.append("rect")
+        .attr("class", "zoom")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .call(zoom);
 });
+
+var trans = svg.transition().duration(200);
+
+function update() {
+
+    to_draw = globaldata.filter(function(d) { return d.Chemical == chemical && d.DateTime.getMonth() == month})
+
+    x.domain(d3.extent(to_draw, function(d) { return d.DateTime; }));
+    y.domain([0, d3.max(to_draw, function(d) { return d.Reading; })]);
+    x2.domain(x.domain());
+    y2.domain(y.domain());
+
+    sensorSum = contsensor(to_draw, x.domain());
+
+    focus.selectAll("circle")
+        .data(sensores)
+        .enter()
+        .append("circle")
+        .attr("class", "area")
+        .attr("cy", function(d) { return height-d.y*height/200;})
+        .attr("cx", function(d) { return d.x*width/200;})
+        .attr("r",  function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
+
+    context.select("#contexto")
+        .datum(to_draw)
+        .transition(trans)
+        .attr("class", "area")
+        .attr("d", area2);
+
+    context.select("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height2 + ")")
+        .transition(trans)
+        .call(xAxis2);
+
+    focus.selectAll("circle")
+        .exit()
+        .remove();
+}
 
 function brushed() {
   if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
@@ -144,7 +171,7 @@ function brushed() {
   x.domain(s.map(x2.invert, x2));
   //focus.selectAll(".area").attr("d", area);
   context.select(".area").attr("d", area2);
-  var sensorSum = contsensor(globaldata, x.domain());
+  var sensorSum = contsensor(to_draw, x.domain());
   focus.selectAll("circle").attr("r", function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
   focus.select(".axis--x").call(xAxis);
   svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
@@ -156,7 +183,7 @@ function zoomed() {
   if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
   var t = d3.event.transform;
   x.domain(t.rescaleX(x2).domain());
-  var sensorSum = contsensor(globaldata, x.domain());
+  var sensorSum = contsensor(to_draw, x.domain());
   focus.selectAll("circle").attr("r", function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
   focus.select(".axis--x").call(xAxis);
   context.select(".brush").call(brush.move, x.range().map(t.invertX, t));

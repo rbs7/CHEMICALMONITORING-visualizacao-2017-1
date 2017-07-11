@@ -29,5 +29,32 @@
 	<body>
 		<svg id="bbb" width="720" height="900"></svg>
 		<script type="text/javascript" src="q3.js"></script>
+		
+		<select id = "Month">
+        	<option value=3>April</option>
+        	<option value=7>August</option> 
+        	<option value=11>December</option>   
+    	</select>
+
+    	<select id = "Chemical">
+	        <option value="Appluimonia">Appluimonia</option> 
+	        <option value="AGOC-3A">AGOC-3A</option>   
+	        <option value="Chlorodinine">Chlorodinine</option> 
+	        <option value="Methylosmolene">Methylosmolene</option>
+    	</select>
+
+		<script type="text/javascript">
+		d3.select('#Month')
+			.on('change', function() {
+			month = eval(d3.select(this).property("value"));
+			update();
+		});
+
+		d3.select('#Chemical')
+			.on('change', function() {
+			chemical = d3.select(this).property("value");
+			update();
+		});
+		</script> 
 	</body>
 </html>
