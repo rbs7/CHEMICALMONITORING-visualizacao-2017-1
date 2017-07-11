@@ -65,18 +65,29 @@ var sensores = [
     {x:119, y:42, r:3}
 ];
 
+var to_draw, sensorSum;
+var month = 3, chemical = "Appluimonia";
+
 var globaldata;
 function makeglobaldata(data) {
     globaldata = data;
 }
 
-var to_draw, sensorSum;
-var month = 3, chemical = "Appluimonia";
-
 function contsensor(data, interval) {
   var dataaux = data.filter(function(d) { return d.DateTime.getTime() >= interval[0].getTime() && d.DateTime.getTime() <= interval[1].getTime() });
   var sensorSum = dataaux.reduce(function (previous,d) { previous[d.Monitor-1]+=d.Reading; return previous; }, [0,0,0,0,0,0,0,0,0]);
   return sensorSum;
+}
+
+var globalwinddata;
+function makeglobalwinddata(data) {
+    globalwinddata = data;
+}
+
+function contwind(data, interval) {
+  var dataaux = data.filter(function(d) { return d.Date.getTime() >= interval[0].getTime() && d.Date.getTime() <= interval[1].getTime() });
+  var windSum = dataaux.reduce(function (previous,d) { return previous+d.WindDirection; }, 0);
+  return windSum/dataaux.length;
 }
 
 d3.csv("sensor_data.csv", type, function(error,data) {
@@ -124,6 +135,32 @@ d3.csv("sensor_data.csv", type, function(error,data) {
         .attr("height", height)
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
         .call(zoom);
+
+  //Leitura do Vento
+  d3.csv("meteorological_data.csv", typeWind, function(error, data) {
+        if (error) throw error;
+
+        makeglobalwinddata(data);
+
+        var windAverageDirection = contwind(data, x.domain());
+        focus.append("text")
+            .attr("x", 30)
+            .attr("y", 30)
+            .text(windAverageDirection)
+            .attr("fill", "white");
+
+        //debugger;
+        /*focus.selectAll("rect")
+            .data(sensores)
+            .enter()
+            .append("rect")
+            .attr("class", "area")
+            .attr("cy", function(d) { return height-d.y*height/200;})
+            .attr("cx", function(d) { return d.x*width/200;})
+            .attr("r",  function(d,i) { return 3*Math.sqrt(sensorSum[i]);})
+            ;*/
+  });
+
 });
 
 var trans = svg.transition().duration(200);
@@ -174,6 +211,10 @@ function brushed() {
   var sensorSum = contsensor(to_draw, x.domain());
   focus.selectAll("circle").attr("r", function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
   focus.select(".axis--x").call(xAxis);
+  if (globalwinddata) {
+    var windAverageDirection = contwind(globalwinddata, x.domain());
+    focus.select("text").text(windAverageDirection);
+  }
   svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
       .scale(width / (s[1] - s[0]))
       .translate(-s[0], 0));
@@ -186,6 +227,10 @@ function zoomed() {
   var sensorSum = contsensor(to_draw, x.domain());
   focus.selectAll("circle").attr("r", function(d,i) { return 3*Math.sqrt(sensorSum[i]);});
   focus.select(".axis--x").call(xAxis);
+  if (globalwinddata) {
+    var windAverageDirection = contwind(globalwinddata, x.domain());
+    focus.select("text").text(windAverageDirection);
+  }
   context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
 }
 
@@ -194,5 +239,12 @@ function type(d) {
   d.Monitor = +d.Monitor;
   d.DateTime = parseDate(d.DateTime);
   d.Reading = +d.Reading;
+  return d;
+}
+
+function typeWind(d) {
+  d.Date = parseDate(d.Date);
+  d.WindDirection = +d.WindDirection;
+  d.WindSpeed = +d.WindSpeed;
   return d;
 }
