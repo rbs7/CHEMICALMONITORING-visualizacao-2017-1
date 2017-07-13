@@ -2,7 +2,8 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Q1</title>
+    <title>Chemical Monitoring - Q2</title>
+    <meta name="viewport" content="width=device-width">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="jquery-csv.min.js"></script>
@@ -43,6 +44,7 @@
     </select>
 
     <select id = "Sensor">
+        <option value=0>All</option>
         <option value=1>1</option>
         <option value=2>2</option> 
         <option value=3>3</option>
@@ -62,12 +64,12 @@
         <option value=4>Methylosmolene</option>
     </select>
 
-    <button id="generate_data" onclick="updateSvg()">Generate Data</button>
-
     <script>
     const margin = {top: 50, right: 50, bottom: 50, left: 50},
+        margin2 = {top: 430, right: 20, bottom: 30, left: 40},
         width = 800 - margin.left - margin.right,
         height = 600 - margin.top - margin.bottom;
+        //height2 = +svg.attr("height") - margin2.top - margin2.bottom;
         r = height/100;
 
     var to_plot = [];
@@ -159,21 +161,25 @@
     d3.select('#Month')
         .on('change', function() {
         month = eval(d3.select(this).property("value"));
+        updateSvg();
     });
 
     d3.select('#Hour')
         .on('change', function() {
         hour = eval(d3.select(this).property("value"));
+        updateSvg();
     });
 
     d3.select('#Sensor')
         .on('change', function() {
         sensor = eval(d3.select(this).property("value"));
+        updateSvg();
     });
     
     d3.select('#Chemical')
         .on('change', function() {
         chemical = eval(d3.select(this).property("value"));
+        updateSvg();
     });
 
     function brushended() {
@@ -226,7 +232,7 @@
         for (i = 0; i < data.length; i++) {
             if ((new Date(parseTime(data[i][2]))).getMonth() == month) {
                 if (new Date(parseHour(data[i][3])).getHours() == hour) {
-                    if (Number(data[i][1] == sensor)) {
+                    if (Number(data[i][1] == sensor || sensor == 0)) {
 
                     	if (chemical == 0 ||
                     	data[i][0] == "Appluimonia" && chemical == 1 ||
